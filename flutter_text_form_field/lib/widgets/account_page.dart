@@ -1,39 +1,78 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_text_form_field/widgets/widget.dart';
 
+/// [AccountPage]
 class AccountPage extends StatelessWidget {
   AccountPage({
     Key? key,
-    required this.pages,
     required this.controller,
-  }) : super(key: key);
-  final List<Widget> pages;
+    required this.onPageChange,
+    required this.formKeyRegister,
+    required this.formKeyLog,
+    required this.onBackPageChange,
+    required this.textController,
+  })   : assert(formKeyLog != null),
+        super(key: key);
+
   final PageController controller;
+  final Function(int) onPageChange;
+  final Function onBackPageChange;
+  final formKeyLog;
+  final formKeyRegister;
+  final List textController;
 
   int currentPage = 0;
+
+  Future<List<Widget>> pages() async {
+    final page = <Widget>[
+      LoginPage(
+        key: UniqueKey(),
+        formKey: formKeyLog,
+        controller: [textController[0], textController[1]],
+        onPressed: () => _createAccount(),
+      ),
+      RegisterPage(
+        key: UniqueKey(),
+        formKey: formKeyRegister,
+        controller: [textController[2], textController[3], textController[4]],
+      ),
+    ];
+    return page;
+  }
+
+  void _createAccount() {
+    controller.jumpToPage(1);
+  }
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Positioned(
-      bottom: 100.0,
+      bottom: 5.0,
       child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            width: 2.0,
-            color: Colors.black,
-          ),
-          borderRadius: BorderRadius.circular(20.0),
-        ),
         width: size.width,
-        height: 300.0,
+        height: 400.0,
         child: Stack(
           children: [
-            PageView.builder(
-              controller: controller,
-              physics: NeverScrollableScrollPhysics(),
-              onPageChanged: (page) => currentPage = page,
-              itemCount: pages.length,
-              itemBuilder: (context, index) => pages[index],
+            FutureBuilder<List<Widget>>(
+              future: pages(),
+              builder: (context, constraint) {
+                if (constraint.hasData) {
+                  List pages = constraint.data!;
+                  return PageView.builder(
+                    controller: controller,
+                    //physics: NeverScrollableScrollPhysics(),
+                    onPageChanged: (page) => {
+                      currentPage = page,
+                      onPageChange.call(page),
+                    },
+                    itemCount: pages.length,
+                    itemBuilder: (context, index) => pages[index],
+                  );
+                } else {
+                  return Container();
+                }
+              },
             ),
             Positioned(
               left: 5.0,
@@ -47,7 +86,7 @@ class AccountPage extends StatelessWidget {
                 child: IconButton(
                   color: Colors.white,
                   padding: EdgeInsets.zero,
-                  onPressed: () => print('back page'),
+                  onPressed: () => onBackPageChange.call(),
                   icon: Icon(Icons.arrow_back_ios),
                 ),
               ),

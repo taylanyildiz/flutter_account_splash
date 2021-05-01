@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/widget.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -9,8 +10,15 @@ class WelcomeScreen extends StatefulWidget {
 /// PageView.builder have register and login with animation
 class _WelcomeScreenState extends State<WelcomeScreen>
     with TickerProviderStateMixin {
+  final _formKeylogin = GlobalKey<FormState>();
+  final _formkeyRegister = GlobalKey<FormState>();
   AnimationController? _contoller;
   PageController? _pageController;
+  final mailLog = TextEditingController();
+  final passLog = TextEditingController();
+  final nameReg = TextEditingController();
+  final mailReg = TextEditingController();
+  final passReg = TextEditingController();
   int currentPage = 0;
 
   @override
@@ -31,9 +39,36 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     });
   }
 
-  final _screens = <Widget>[
-    _LoginPage(),
-  ];
+  void _backPageChange() {
+    if (currentPage != 0) {
+      currentPage -= 1;
+      _pageController!.jumpToPage(currentPage);
+    }
+  }
+
+  Future checkAccount(String m, String p) async {
+    var sp = await SharedPreferences.getInstance();
+    String mail = sp.getString('mail') ?? '';
+    String pass = sp.getString('pass') ?? '';
+    if (mail.isNotEmpty && pass.isNotEmpty) {
+      if (mail == m && pass == p) {
+        print('true');
+      } else {
+        /// SnackBar
+        print('no account found');
+      }
+    } else {
+      /// [SnackBar]
+      print('not found');
+    }
+  }
+
+  Future createAccount(String m, String p, String n) async {
+    var sp = await SharedPreferences.getInstance();
+    sp.setString('mail', m);
+    sp.setString('pass', p);
+    sp.setString('name', n);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +79,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: SingleChildScrollView(
           child: Stack(
             children: [
-              AccountPage(pages: _screens, controller: _pageController!),
+              AccountPage(
+                textController: [mailLog, passLog, nameReg, mailReg, passReg],
+                controller: _pageController!,
+                formKeyLog: _formKeylogin,
+                formKeyRegister: _formkeyRegister,
+                onPageChange: (page) => currentPage = page,
+                onBackPageChange: () => _backPageChange(),
+              ),
               TransitionAnim(animation: _contoller!.view),
               SelectProfile(),
             ],
@@ -52,99 +94,34 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
+        onPressed: () async {
           if (_contoller!.status != AnimationStatus.reverse) {
-            _contoller!.forward();
+            FocusScope.of(context).unfocus();
+            if (currentPage == 0) {
+              final isCheck = _formKeylogin.currentState!.validate();
+              if (isCheck) {
+                String mail = mailLog.text;
+                String pass = passLog.text;
+                checkAccount(mail, pass);
+                _contoller!.forward();
+              }
+            }
+            if (currentPage == 1) {
+              final isCheck = _formkeyRegister.currentState!.validate();
+              if (isCheck) {
+                _contoller!.forward();
+                var m = mailReg.text;
+                var p = passReg.text;
+                var n = nameReg.text;
+                await createAccount(m, p, n);
+                _pageController!.jumpToPage(0);
+              }
+            }
           }
         },
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         child: Icon(Icons.arrow_forward_ios),
-      ),
-    );
-  }
-}
-
-/// [PageView.builder] returns pages
-class _LoginPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return Container(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(height: 40.0),
-          Form(
-            child: Column(
-              children: [
-                SizedBox(
-                  width: size.width * .8,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.person),
-                      labelText: 'e-mail',
-                      labelStyle: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10.0),
-                SizedBox(
-                  width: size.width * .8,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(Icons.visibility_off),
-                        onPressed: () => print('visibility'),
-                      ),
-                      labelText: 'password',
-                      labelStyle: TextStyle(
-                        color: Colors.black,
-                        fontSize: 20.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 20.0),
-          Text(
-            'or',
-            style: TextStyle(
-              color: Colors.black,
-              fontSize: 15.0,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(
-            width: size.width * .7,
-            child: MaterialButton(
-              onPressed: () => print(''),
-              child: Text('Create Account'),
-              color: Colors.red,
-              textColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0)),
-            ),
-          ),
-        ],
       ),
     );
   }
