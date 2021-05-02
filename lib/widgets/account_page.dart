@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_text_form_field/widgets/widget.dart';
 
 /// [AccountPage]
+// ignore: must_be_immutable
 class AccountPage extends StatelessWidget {
   AccountPage({
     Key? key,

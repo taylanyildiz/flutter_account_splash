@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/widget.dart';
+import 'screen.dart';
+
+Route _createRoute(Widget child) => PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: animation.drive(
+            Tween(begin: Offset(-1.0, 0.0), end: Offset.zero).chain(
+                CurveTween(curve: Interval(0.0, .9, curve: Curves.easeInOut)))),
+        child: child,
+      );
+    });
 
 class WelcomeScreen extends StatefulWidget {
   @override
@@ -53,6 +65,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     if (mail.isNotEmpty && pass.isNotEmpty) {
       if (mail == m && pass == p) {
         print('true');
+        Navigator.push(context, _createRoute(HomeScreen()));
       } else {
         /// SnackBar
         print('no account found');
@@ -102,8 +115,8 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               if (isCheck) {
                 String mail = mailLog.text;
                 String pass = passLog.text;
+                await _contoller!.forward();
                 checkAccount(mail, pass);
-                _contoller!.forward();
               }
             }
             if (currentPage == 1) {
